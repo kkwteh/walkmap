@@ -1,0 +1,17 @@
+.App {
+  width: 700px;
+  height: 700px;
+}
+
+.Sidebar {
+  position: fixed;
+  width: 400px;
+  overflow-y: scroll;
+  top: 0;
+  bottom: 0;
+}
+
+#mainmap {
+  position: relative;
+  margin-left: 400px;
+}
