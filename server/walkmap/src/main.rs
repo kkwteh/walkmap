@@ -7,15 +7,17 @@
 extern crate diesel;
 
 use actix_web::{get, middleware, post, web, App, Error, HttpResponse, HttpServer};
+use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
+
 use uuid::Uuid;
 
 mod actions;
 mod models;
 mod schema;
 
-type DbPool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
+type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 /// Finds user by UID.
 #[get("/user/{user_id}")]
@@ -37,8 +39,7 @@ async fn get_user(
     if let Some(user) = user {
         Ok(HttpResponse::Ok().json(user))
     } else {
-        let res = HttpResponse::NotFound()
-            .body(format!("No user found with uid: {}", user_uid));
+        let res = HttpResponse::NotFound().body(format!("No user found with uid: {}", user_uid));
         Ok(res)
     }
 }
@@ -70,7 +71,7 @@ async fn main() -> std::io::Result<()> {
 
     // set up database connection pool
     let connspec = std::env::var("DATABASE_URL").expect("DATABASE_URL");
-    let manager = ConnectionManager::<SqliteConnection>::new(connspec);
+    let manager = ConnectionManager::<PgConnection>::new(connspec);
     let pool = r2d2::Pool::builder()
         .build(manager)
         .expect("Failed to create pool.");
