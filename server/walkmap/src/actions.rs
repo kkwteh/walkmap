@@ -44,6 +44,19 @@ pub fn insert_new_user(
     Ok(new_user)
 }
 
+pub fn insert_new_map(conn: &PgConnection) -> Result<models::Map, diesel::result::Error> {
+    use crate::schema::maps::dsl::*;
+    let new_map = models::Map {
+        id: "ABCDE".to_owned(),
+        user_id: None,
+        created_at: 124,
+    };
+
+    diesel::insert_into(maps).values(&new_map).execute(conn)?;
+
+    Ok(new_map)
+}
+
 // Keep the databse info in mind to drop them later
 struct TestContext {
     base_url: String,
@@ -109,8 +122,6 @@ fn insert_user_test() {
 
     let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptest").unwrap();
 
-    // Now do your test.
-
     let user = insert_new_user("bill", &conn).unwrap();
     assert_eq!(user.name, "bill");
 
@@ -118,4 +129,13 @@ fn insert_user_test() {
         .unwrap()
         .unwrap();
     assert_eq!(found_user.name, "bill");
+}
+
+#[test]
+fn insert_map_test() {
+    let _ctx = TestContext::new("postgresql://localhost:5432", "walkmaptest");
+
+    let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptest").unwrap();
+
+    let map = insert_new_map(&conn).unwrap();
 }
