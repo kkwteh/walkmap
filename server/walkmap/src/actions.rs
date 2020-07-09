@@ -4,9 +4,32 @@ embed_migrations!("migrations/");
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use rand::distributions::Distribution;
+use rand::{thread_rng, Rng};
+use std::time::SystemTime;
 use uuid::Uuid;
 
 use crate::models;
+
+#[derive(Debug)]
+pub struct Letters;
+
+impl Distribution<char> for Letters {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> char {
+        const RANGE: u32 = 26;
+        const GEN_ASCII_STR_CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        // We can pick from 62 characters. This is so close to a power of 2, 64,
+        // that we can do better than `Uniform`. Use a simple bitshift and
+        // rejection sampling. We do not use a bitmask, because for small RNGs
+        // the most significant bits are usually of higher quality.
+        loop {
+            let var = rng.gen_range(0, 26);
+            if var < RANGE {
+                return GEN_ASCII_STR_CHARSET[var as usize] as char;
+            }
+        }
+    }
+}
 
 /// Run query using Diesel to insert a new database row and return the result.
 pub fn find_user_by_uid(
@@ -46,10 +69,18 @@ pub fn insert_new_user(
 
 pub fn insert_new_map(conn: &PgConnection) -> Result<models::Map, diesel::result::Error> {
     use crate::schema::maps::dsl::*;
+    let rand_string: String = thread_rng()
+        .sample_iter(&Letters)
+        .take(5)
+        .collect::<String>()
+        .to_uppercase();
     let new_map = models::Map {
-        id: "ABCDE".to_owned(),
+        id: rand_string,
         user_id: None,
-        created_at: 124,
+        created_at: SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Could not find system time")
+            .as_secs() as i64,
     };
 
     diesel::insert_into(maps).values(&new_map).execute(conn)?;
@@ -137,5 +168,6 @@ fn insert_map_test() {
 
     let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptest").unwrap();
 
-    let map = insert_new_map(&conn).unwrap();
+    let map = insert_new_map(&conn).expect("Could not insert new map");
+    println!("{:?}", map);
 }

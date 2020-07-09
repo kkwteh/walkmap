@@ -23,7 +23,6 @@ mod schema;
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
-/// Finds user by UID.
 #[get("/user/{user_id}")]
 async fn get_user(
     pool: web::Data<DbPool>,
@@ -48,7 +47,6 @@ async fn get_user(
     }
 }
 
-/// Inserts new user with name defined in form.
 #[post("/user")]
 async fn add_user(
     pool: web::Data<DbPool>,
@@ -56,7 +54,6 @@ async fn add_user(
 ) -> Result<HttpResponse, Error> {
     let conn = pool.get().expect("couldn't get db connection from pool");
 
-    // use web::block to offload blocking Diesel code without blocking server thread
     let user = web::block(move || actions::insert_new_user(&form.name, &conn))
         .await
         .map_err(|e| {
@@ -65,6 +62,32 @@ async fn add_user(
         })?;
 
     Ok(HttpResponse::Ok().json(user))
+}
+
+#[post("/map")]
+async fn add_map(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    let conn = pool.get().expect("couldn't get db connection from pool");
+
+    let map = web::block(move || actions::insert_new_map(&conn))
+        .await
+        .map_err(|e| {
+            eprintln!("{}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    println!("{:?}", map);
+    Ok(HttpResponse::Ok().json(map))
+}
+
+#[test]
+fn test_map_http_response() {
+    let connspec = "postgresql://localhost:5432/walkmap".to_owned();
+    let manager = ConnectionManager::<PgConnection>::new(connspec);
+    let pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create pool.");
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let map = actions::insert_new_map(&conn);
 }
 
 #[actix_rt::main]
@@ -84,7 +107,6 @@ async fn main() -> std::io::Result<()> {
 
     println!("Starting server at: {}", &bind);
 
-    // Start HTTP server
     HttpServer::new(move || {
         App::new()
             // set up DB pool to be used with web::Data<Pool> extractor
@@ -92,6 +114,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             .service(get_user)
             .service(add_user)
+            .service(add_map)
     })
     .bind(&bind)?
     .run()

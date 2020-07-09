@@ -1916,6 +1916,7 @@ dependencies = [
  "futures",
  "r2d2",
  "r2d2_postgres",
+ "rand",
  "serde",
  "serde_json",
  "uuid",
