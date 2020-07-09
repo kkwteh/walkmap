@@ -1,0 +1,10 @@
+CREATE TABLE users (
+  id VARCHAR NOT NULL PRIMARY KEY,
+  name VARCHAR NOT NULL
+);
+
+CREATE TABLE maps (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT REFERENCES users(id),
+  created_at BIGINT NOT NULL
+);
