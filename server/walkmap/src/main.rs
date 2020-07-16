@@ -11,7 +11,7 @@ extern crate diesel_migrations;
 
 use actix_web::{get, middleware, post, web, App, Error, HttpResponse, HttpServer};
 use diesel::pg::PgConnection;
-use diesel::prelude::*;
+// use diesel::prelude::*;
 
 use diesel::r2d2::{self, ConnectionManager};
 

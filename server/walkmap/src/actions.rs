@@ -67,6 +67,30 @@ pub fn insert_new_user(
     Ok(new_user)
 }
 
+pub fn insert_new_marker(
+    map_id_: &str,
+    order_parameter_: f64,
+    lat_: f64,
+    lon_: f64,
+    conn: &PgConnection,
+) -> Result<models::Marker, diesel::result::Error> {
+    use crate::schema::markers::dsl::*;
+
+    let marker = models::Marker {
+        id: Uuid::new_v4().to_string(),
+        map_id: map_id_.to_owned(),
+        order_parameter: order_parameter_,
+        lat: lat_,
+        lon: lon_,
+        annotation: None,
+        image_url: None,
+    };
+
+    diesel::insert_into(markers).values(&marker).execute(conn)?;
+
+    Ok(marker)
+}
+
 pub fn insert_new_map(conn: &PgConnection) -> Result<models::Map, diesel::result::Error> {
     use crate::schema::maps::dsl::*;
     let rand_string: String = thread_rng()
@@ -88,86 +112,93 @@ pub fn insert_new_map(conn: &PgConnection) -> Result<models::Map, diesel::result
     Ok(new_map)
 }
 
-// Keep the databse info in mind to drop them later
-struct TestContext {
-    base_url: String,
-    db_name: String,
-}
+#[cfg(test)]
+mod test {
+    // Keep the databse info in mind to drop them later
+    use super::*;
+    struct TestContext {
+        base_url: String,
+        db_name: String,
+    }
 
-impl TestContext {
-    fn new(base_url: &str, db_name: &str) -> Self {
-        // First, connect to postgres db to be able to create our test
-        // database.
-        let postgres_url = format!("{}/postgres", base_url);
-        let conn =
-            PgConnection::establish(&postgres_url).expect("Cannot connect to postgres database.");
+    impl TestContext {
+        fn new(base_url: &str, db_name: &str) -> Self {
+            // First, connect to postgres db to be able to create our test
+            // database.
+            let postgres_url = format!("{}/postgres", base_url);
+            let conn = PgConnection::establish(&postgres_url)
+                .expect("Cannot connect to postgres database.");
 
-        // Create a new database for the test
-        let query = diesel::sql_query(format!("CREATE DATABASE {}", db_name).as_str());
-        query
-            .execute(&conn)
-            .expect(format!("Could not create database {}", db_name).as_str());
+            // Create a new database for the test
+            let query = diesel::sql_query(format!("CREATE DATABASE {}", db_name).as_str());
+            query
+                .execute(&conn)
+                .expect(format!("Could not create database {}", db_name).as_str());
 
-        let conn = PgConnection::establish(&format!("{}/{}", base_url, db_name))
-            .expect(&format!("Cannot connect to {} database", db_name));
-        let result = embedded_migrations::run(&conn);
+            let conn = PgConnection::establish(&format!("{}/{}", base_url, db_name))
+                .expect(&format!("Cannot connect to {} database", db_name));
+            let result = embedded_migrations::run(&conn);
 
-        if let Err(e) = result {
-            panic!("Failed to run migrations. Error: {}", e);
-        }
+            if let Err(e) = result {
+                panic!("Failed to run migrations. Error: {}", e);
+            }
 
-        Self {
-            base_url: base_url.to_string(),
-            db_name: db_name.to_string(),
+            Self {
+                base_url: base_url.to_string(),
+                db_name: db_name.to_string(),
+            }
         }
     }
-}
 
-impl Drop for TestContext {
-    fn drop(&mut self) {
-        let postgres_url = format!("{}/postgres", self.base_url);
-        let conn =
-            PgConnection::establish(&postgres_url).expect("Cannot connect to postgres database.");
+    impl Drop for TestContext {
+        fn drop(&mut self) {
+            let postgres_url = format!("{}/postgres", self.base_url);
+            let conn = PgConnection::establish(&postgres_url)
+                .expect("Cannot connect to postgres database.");
 
-        let disconnect_users = format!(
-            "SELECT pg_terminate_backend(pid)
+            let disconnect_users = format!(
+                "SELECT pg_terminate_backend(pid)
 FROM pg_stat_activity
 WHERE datname = '{}';",
-            self.db_name
-        );
+                self.db_name
+            );
 
-        diesel::sql_query(disconnect_users.as_str())
-            .execute(&conn)
-            .unwrap();
+            diesel::sql_query(disconnect_users.as_str())
+                .execute(&conn)
+                .unwrap();
 
-        let query = diesel::sql_query(format!("DROP DATABASE {}", self.db_name).as_str());
-        query
-            .execute(&conn)
-            .expect(&format!("Couldn't drop database {}", self.db_name));
+            let query = diesel::sql_query(format!("DROP DATABASE {}", self.db_name).as_str());
+            query
+                .execute(&conn)
+                .expect(&format!("Couldn't drop database {}", self.db_name));
+        }
     }
-}
 
-#[test]
-fn insert_user_test() {
-    let _ctx = TestContext::new("postgresql://localhost:5432", "walkmaptest");
+    #[test]
+    fn insert_user_test() {
+        let _ctx = TestContext::new("postgresql://localhost:5432", "walkmaptesttwo");
 
-    let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptest").unwrap();
+        let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptesttwo").unwrap();
 
-    let user = insert_new_user("bill", &conn).unwrap();
-    assert_eq!(user.name, "bill");
+        let user = insert_new_user("bill", &conn).unwrap();
+        assert_eq!(user.name, "bill");
 
-    let found_user = find_user_by_uid(Uuid::parse_str(&user.id).unwrap(), &conn)
-        .unwrap()
-        .unwrap();
-    assert_eq!(found_user.name, "bill");
-}
+        let found_user = find_user_by_uid(Uuid::parse_str(&user.id).unwrap(), &conn)
+            .unwrap()
+            .unwrap();
+        assert_eq!(found_user.name, "bill");
+    }
 
-#[test]
-fn insert_map_test() {
-    let _ctx = TestContext::new("postgresql://localhost:5432", "walkmaptest");
+    #[test]
+    fn insert_map_marker_test() {
+        let _ctx = TestContext::new("postgresql://localhost:5432", "walkmaptest");
 
-    let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptest").unwrap();
+        let conn = PgConnection::establish(&"postgresql://localhost:5432/walkmaptest").unwrap();
 
-    let map = insert_new_map(&conn).expect("Could not insert new map");
-    println!("{:?}", map);
+        let map = insert_new_map(&conn).expect("Could not insert new map");
+        println!("{:?}", map);
+
+        let marker = insert_new_marker(&map.id, 100.0, 1.0, 1.0, &conn);
+        println!("{:?}", marker);
+    }
 }
