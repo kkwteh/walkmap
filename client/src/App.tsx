@@ -1,12 +1,40 @@
 import React, { useState } from "react";
-import "./App.css";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  Redirect,
+  useParams,
+  useRouteMatch,
+} from "react-router-dom";
 import { WalkMarker } from "./WalkMarker";
 import { MainMap, mapCache } from "./MainMap";
 import { Sidebar } from "./Sidebar";
 import { Marker } from "leaflet";
+import "./App.css";
 import "leaflet/dist/leaflet.css";
 
+// Add react-router-dom
+// Redirect
+// await insert new map
+// redirect to /:map_id
 function App() {
+  return (
+    <Router>
+      <Switch>
+        <Route path="/:map_id">
+          <Map />
+        </Route>
+        <Route path="/">
+          <Redirect to="/ABCDEF" />
+        </Route>
+      </Switch>
+    </Router>
+  );
+}
+
+function Map() {
   const [selectedMarker, setSelectedMarker] = useState<WalkMarker | undefined>(
     undefined
   );
