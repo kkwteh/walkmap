@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Switch,
@@ -7,7 +7,9 @@ import {
   Redirect,
   useParams,
   useRouteMatch,
+  withRouter,
 } from "react-router-dom";
+import axios from "axios";
 import { WalkMarker } from "./WalkMarker";
 import { MainMap, mapCache } from "./MainMap";
 import { Sidebar } from "./Sidebar";
@@ -19,19 +21,40 @@ import "leaflet/dist/leaflet.css";
 // Redirect
 // await insert new map
 // redirect to /:map_id
+
 function App() {
   return (
     <Router>
       <Switch>
-        <Route path="/:map_id">
+        <Route path="/:mapId">
           <Map />
         </Route>
         <Route path="/">
-          <Redirect to="/ABCDEF" />
+          <Init />
         </Route>
       </Switch>
     </Router>
   );
+}
+
+function Init() {
+  const [mapId, setMapId] = useState<string | undefined>();
+  console.log("mapId", mapId);
+  useEffect(() => {
+    axios
+      .get(
+        "https://gist.githubusercontent.com/witalewski/fc8f043d53a0d505f84c5ddb04ae76ea/raw/7c505bbc1675a0bc8a067f8b633b531c769bb64c/data.json"
+      )
+      .then(({ data }) => {
+        setMapId("ABCDEF");
+      });
+  }, []);
+
+  if (mapId === undefined) {
+    return <div>Fetching map information</div>;
+  }
+
+  return <Redirect to={`/${mapId}`} />;
 }
 
 function Map() {
