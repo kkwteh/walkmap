@@ -9,10 +9,11 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-use actix_web::{get, middleware, post, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{get, http, middleware, post, web, App, Error, HttpResponse, HttpServer};
 use diesel::pg::PgConnection;
 // use diesel::prelude::*;
 
+use actix_cors::Cors;
 use diesel::r2d2::{self, ConnectionManager};
 
 use uuid::Uuid;
@@ -79,17 +80,6 @@ async fn add_map(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     Ok(HttpResponse::Ok().json(map))
 }
 
-#[test]
-fn test_map_http_response() {
-    let connspec = "postgresql://localhost:5432/walkmap".to_owned();
-    let manager = ConnectionManager::<PgConnection>::new(connspec);
-    let pool = r2d2::Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
-    let conn = pool.get().expect("couldn't get db connection from pool");
-    let map = actions::insert_new_map(&conn);
-}
-
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=info");
@@ -103,12 +93,17 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let bind = "127.0.0.1:8080";
+    let bind = "127.0.0.1:8081";
 
     println!("Starting server at: {}", &bind);
 
+    // TODO set Access-Control-Allow-Origin header
+    // CORS protocol description https://fetch.spec.whatwg.org/#http-cors-protocol
     HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default(), // <- Construct CORS middleware builder,
+            )
             // set up DB pool to be used with web::Data<Pool> extractor
             .data(pool.clone())
             .wrap(middleware::Logger::default())

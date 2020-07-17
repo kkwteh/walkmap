@@ -40,14 +40,29 @@ function App() {
 function Init() {
   const [mapId, setMapId] = useState<string | undefined>();
   console.log("mapId", mapId);
+  // change to async await
+  // useEffect(async () => {
+  //   const result = await axios(
+  //     'https://hn.algolia.com/api/v1/search?query=redux',
+  //   );
+
+  //   setData(result.data);
+  // });
+  let config = {
+    headers: { "Access-Control-Allow-Origin": "*" },
+  };
   useEffect(() => {
-    axios
-      .get(
-        "https://gist.githubusercontent.com/witalewski/fc8f043d53a0d505f84c5ddb04ae76ea/raw/7c505bbc1675a0bc8a067f8b633b531c769bb64c/data.json"
-      )
-      .then(({ data }) => {
-        setMapId("ABCDEF");
-      });
+    // axios
+    //   .get(
+    //     "https://gist.githubusercontent.com/witalewski/fc8f043d53a0d505f84c5ddb04ae76ea/raw/7c505bbc1675a0bc8a067f8b633b531c769bb64c/data.json"
+    //   )
+    //   .then(({ data }) => {
+    //     setMapId("ABCDEF");
+    //   });
+    axios.post("http://localhost:8081/map", config).then(({ data }) => {
+      console.log("Data", data);
+      setMapId("ABCDEF");
+    });
   }, []);
 
   if (mapId === undefined) {
