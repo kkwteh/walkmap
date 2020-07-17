@@ -17,11 +17,6 @@ import { Marker } from "leaflet";
 import "./App.css";
 import "leaflet/dist/leaflet.css";
 
-// Add react-router-dom
-// Redirect
-// await insert new map
-// redirect to /:map_id
-
 function App() {
   return (
     <Router>
@@ -36,6 +31,12 @@ function App() {
     </Router>
   );
 }
+
+type Map = {
+  id: string;
+  user_id: string | undefined;
+  created_at: string;
+};
 
 function Init() {
   const [mapId, setMapId] = useState<string | undefined>();
@@ -52,17 +53,13 @@ function Init() {
     headers: { "Access-Control-Allow-Origin": "*" },
   };
   useEffect(() => {
-    // axios
-    //   .get(
-    //     "https://gist.githubusercontent.com/witalewski/fc8f043d53a0d505f84c5ddb04ae76ea/raw/7c505bbc1675a0bc8a067f8b633b531c769bb64c/data.json"
-    //   )
-    //   .then(({ data }) => {
-    //     setMapId("ABCDEF");
-    //   });
-    axios.post("http://localhost:8081/map", config).then(({ data }) => {
-      console.log("Data", data);
-      setMapId("ABCDEF");
-    });
+    async function fetchData() {
+      const response = await axios.post("http://localhost:8080/map", config);
+      const mapData = response.data as Map;
+      console.log("Response data", mapData);
+      setMapId(mapData.id);
+    }
+    fetchData();
   }, []);
 
   if (mapId === undefined) {

@@ -168,7 +168,11 @@ sudo apt install libpq-dev
 ```
 
 ```bash
-$ diesel migration run
+$ cargo install diesel_cli --no-default-features --features postgres
+```
+
+```bash
+$ DATABASE_URL=<database_url> diesel migration run
 ```
 
 ```bash
