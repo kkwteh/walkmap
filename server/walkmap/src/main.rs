@@ -24,6 +24,11 @@ mod schema;
 
 type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
+#[get("/status")]
+async fn get_status(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
+    Ok(HttpResponse::Ok().content_type("text/html").body("A-Ok!"))
+}
+
 #[get("/user/{user_id}")]
 async fn get_user(
     pool: web::Data<DbPool>,
@@ -107,6 +112,7 @@ async fn main() -> std::io::Result<()> {
             // set up DB pool to be used with web::Data<Pool> extractor
             .data(pool.clone())
             .wrap(middleware::Logger::default())
+            .service(get_status)
             .service(get_user)
             .service(add_user)
             .service(add_map)
