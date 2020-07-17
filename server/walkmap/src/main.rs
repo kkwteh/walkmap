@@ -93,11 +93,11 @@ async fn main() -> std::io::Result<()> {
         .build(manager)
         .expect("Failed to create pool.");
 
-    let bind = "127.0.0.1:8081";
+    let bind = "127.0.0.1:8080";
 
     println!("Starting server at: {}", &bind);
 
-    // TODO set Access-Control-Allow-Origin header
+    // TODO use CORS setting less permissive than Cors::default()
     // CORS protocol description https://fetch.spec.whatwg.org/#http-cors-protocol
     HttpServer::new(move || {
         App::new()
